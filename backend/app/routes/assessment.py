@@ -2,12 +2,57 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import Assessment, HolisticProfile
+from app.models import Assessment, HolisticProfile, UserProgressSnapshot
 from app.ml.profile_analyzer import ProfileAnalyzer, CareerAnalyzer
 
 assessment_bp = Blueprint('assessment', __name__)
 analyzer = ProfileAnalyzer()
 career_analyzer = CareerAnalyzer()
+
+
+def create_progress_snapshot(user_id, assessment_type, scores):
+    """Create a progress snapshot after assessment completion"""
+    try:
+        # Calculate aptitude score (average of all aptitude scores)
+        aptitude_score = None
+        if assessment_type == 'aptitude':
+            aptitude_score = sum(scores.values()) / len(scores) if scores else 0
+        else:
+            # Get existing aptitude assessment
+            aptitude_assessment = Assessment.query.filter_by(
+                user_id=user_id, 
+                assessment_type='aptitude'
+            ).first()
+            if aptitude_assessment:
+                aptitude_score = sum(aptitude_assessment.scores.values()) / len(aptitude_assessment.scores)
+        
+        # Get holistic profile for confidence score
+        holistic = HolisticProfile.query.filter_by(user_id=user_id).first()
+        confidence_score = holistic.clarity_score if holistic else 0
+        
+        # Calculate readiness score (based on completion percentage + score quality)
+        all_assessments = Assessment.query.filter_by(user_id=user_id).all()
+        assessment_types = set(a.assessment_type for a in all_assessments)
+        completion_percentage = len(assessment_types) / 4 * 100  # 4 assessment types
+        
+        readiness_score = (completion_percentage * 0.6 + confidence_score * 0.4)
+        
+        # Create snapshot
+        snapshot = UserProgressSnapshot(
+            user_id=user_id,
+            aptitude_score=aptitude_score,
+            confidence_score=confidence_score,
+            readiness_score=readiness_score,
+            assessment_type=assessment_type
+        )
+        
+        db.session.add(snapshot)
+        db.session.commit()
+        
+    except Exception as e:
+        print(f"Error creating progress snapshot: {str(e)}")
+        # Don't fail the assessment if snapshot creation fails
+
 
 
 @assessment_bp.route('/aptitude', methods=['POST'])
@@ -32,6 +77,9 @@ def submit_aptitude():
         )
         db.session.add(assessment)
         db.session.commit()
+        
+        # Create progress snapshot
+        create_progress_snapshot(user_id, 'aptitude', scores)
         
         # Update holistic profile
         holistic = analyzer.generate_holistic_profile(user_id)
@@ -69,6 +117,9 @@ def submit_personality():
         db.session.add(assessment)
         db.session.commit()
         
+        # Create progress snapshot
+        create_progress_snapshot(user_id, 'personality', scores)
+        
         holistic = analyzer.generate_holistic_profile(user_id)
         
         return jsonify({
@@ -103,6 +154,9 @@ def submit_values():
         db.session.add(assessment)
         db.session.commit()
         
+        # Create progress snapshot
+        create_progress_snapshot(user_id, 'values', scores)
+        
         holistic = analyzer.generate_holistic_profile(user_id)
         
         return jsonify({
@@ -136,6 +190,9 @@ def submit_risk():
         )
         db.session.add(assessment)
         db.session.commit()
+        
+        # Create progress snapshot
+        create_progress_snapshot(user_id, 'risk', {'risk_tolerance': score})
         
         holistic = analyzer.generate_holistic_profile(user_id)
         

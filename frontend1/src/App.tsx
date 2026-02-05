@@ -23,6 +23,7 @@ import CareerDetail from "./pages/CareerDetail";
 import Simulator from "./pages/Simulator";
 import AIMentor from "./pages/AIMentor";
 import Roadmap from "./pages/Roadmap";
+import ProgressDashboard from "./pages/ProgressDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/simulator" element={<ProtectedRoute><Simulator /></ProtectedRoute>} />
             <Route path="/mentor" element={<ProtectedRoute><AIMentor /></ProtectedRoute>} />
             <Route path="/roadmap" element={<ProtectedRoute><Roadmap /></ProtectedRoute>} />
+            <Route path="/progress" element={<ProtectedRoute><ProgressDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

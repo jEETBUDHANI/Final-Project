@@ -83,6 +83,11 @@ class Job(db.Model):
     demand_level = db.Column(db.String(20))  # 'High', 'Medium', 'Low'
     work_environment = db.Column(db.String(100))  # 'Office', 'Hybrid', 'Remote'
     
+    # Recruiter criteria for job fit scoring (Module 5)
+    required_aptitude_level = db.Column(db.JSON)  # {'logical': 70, 'numerical': 60, ...}
+    preferred_riasec_traits = db.Column(db.JSON)  # {'I': 0.5, 'R': 0.3, 'C': 0.2}
+    acceptable_risk_tolerance = db.Column(db.String(50))  # 'conservative', 'moderate', 'aggressive'
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -96,7 +101,10 @@ class Job(db.Model):
             'required_skills': self.required_skills,
             'growth_rate': self.growth_rate,
             'demand_level': self.demand_level,
-            'work_environment': self.work_environment
+            'work_environment': self.work_environment,
+            'required_aptitude_level': self.required_aptitude_level,
+            'preferred_riasec_traits': self.preferred_riasec_traits,
+            'acceptable_risk_tolerance': self.acceptable_risk_tolerance
         }
 
 

@@ -3,8 +3,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models import TestResult
 from app.ml.predictor import predictor
+from app.ml.explainability import CareerExplainer
 
 prediction_bp = Blueprint('prediction', __name__)
+explainer = CareerExplainer()
 
 @prediction_bp.route('/test', methods=['POST'])
 @jwt_required()
@@ -107,3 +109,27 @@ def get_result(result_id):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@prediction_bp.route('/explain', methods=['GET'])
+@jwt_required()
+def explain_recommendation():
+    """Explain why a career was recommended to the user"""
+    try:
+        user_id = int(get_jwt_identity())
+        career_name = request.args.get('career')
+        
+        if not career_name:
+            return jsonify({'error': 'Career name is required'}), 400
+        
+        # Get explanation from explainer service
+        explanation = explainer.explain_recommendation(user_id, career_name)
+        
+        if 'error' in explanation:
+            return jsonify(explanation), 400
+        
+        return jsonify(explanation), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+

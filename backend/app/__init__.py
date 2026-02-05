@@ -24,7 +24,16 @@ def create_app():
     # Initialize extensions with app
     db.init_app(app)
     jwt.init_app(app)
-    CORS(app)
+    
+    # Configure CORS to allow frontend origins
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:8081", "http://localhost:8082"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }
+    })
     
     # JWT error handlers
     @jwt.expired_token_loader
@@ -52,16 +61,24 @@ def create_app():
     from app.routes.careers import careers_bp
     from app.routes.roadmaps_api import roadmaps_bp
     from app.routes.chatbot import chatbot_bp
+    from app.routes.skills import skills_bp
+    from app.routes.feedback import feedback_bp
+    from app.routes.admin import admin_bp
+    from app.routes.recruiter import recruiter_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(prediction_bp, url_prefix='/api/predict')
     app.register_blueprint(user_bp, url_prefix='/api/user')
-    app.register_blueprint(assessment_bp, url_prefix='/api/assessments')
+    app.register_blueprint(assessment_bp, url_prefix='/api/assessment')
     app.register_blueprint(roadmap_bp, url_prefix='/api/roadmap')
     app.register_blueprint(services_bp, url_prefix='/api/services')
     app.register_blueprint(careers_bp, url_prefix='/api/careers')
     app.register_blueprint(roadmaps_bp, url_prefix='/api/roadmaps')
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
+    app.register_blueprint(skills_bp, url_prefix='/api/skills')
+    app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(recruiter_bp, url_prefix='/api/recruiter')
     
     # Create tables
     with app.app_context():

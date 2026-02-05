@@ -101,6 +101,33 @@ export default function WorkValuesTest() {
         setResults(averages);
         setShowResults(true);
 
+        // Submit to backend API
+        const submitToBackend = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    await fetch('http://localhost:5000/api/assessment/values', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            answers: answers.map((answer, index) => ({
+                                questionId: questions[index].id,
+                                value: answer,
+                                category: questions[index].category
+                            }))
+                        })
+                    });
+                }
+            } catch (error) {
+                console.error('Error submitting to backend:', error);
+            }
+        };
+
+        submitToBackend();
+
         // Mark assessment as completed (user-specific)
         if (user) {
             markAssessmentComplete(user.id, 'values');

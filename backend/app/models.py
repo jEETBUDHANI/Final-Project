@@ -138,5 +138,74 @@ class CareerFeedback(db.Model):
         }
 
 
+class CareerSkill(db.Model):
+    """Skills required for specific careers"""
+    __tablename__ = 'career_skills'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    career_name = db.Column(db.String(200), nullable=False)
+    skill_name = db.Column(db.String(200), nullable=False)
+    proficiency_required = db.Column(db.Integer, nullable=False)  # 1-5 scale
+    category = db.Column(db.String(100))  # 'technical', 'soft', 'domain'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'career_name': self.career_name,
+            'skill_name': self.skill_name,
+            'proficiency_required': self.proficiency_required,
+            'category': self.category
+        }
+
+
+class UserCareerFeedback(db.Model):
+    """User feedback on career recommendations for continuous learning"""
+    __tablename__ = 'user_career_feedback'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    career_id = db.Column(db.String(200), nullable=False)  # Career name or ID
+    rating = db.Column(db.Integer, nullable=False)  # 1-5
+    satisfied = db.Column(db.Boolean, default=False)
+    comment = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'career_id': self.career_id,
+            'rating': self.rating,
+            'satisfied': self.satisfied,
+            'comment': self.comment,
+            'created_at': self.created_at.isoformat()
+        }
+
+
+class UserProgressSnapshot(db.Model):
+    """Track user progress over time"""
+    __tablename__ = 'user_progress_snapshots'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    aptitude_score = db.Column(db.Float)
+    confidence_score = db.Column(db.Float)
+    readiness_score = db.Column(db.Float)
+    assessment_type = db.Column(db.String(50))  # Which assessment triggered this snapshot
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'aptitude_score': self.aptitude_score,
+            'confidence_score': self.confidence_score,
+            'readiness_score': self.readiness_score,
+            'assessment_type': self.assessment_type,
+            'timestamp': self.timestamp.isoformat()
+        }
+
+
 # Import extended models
 from app.models_extended import CareerPath, ExamPreparation, Job, Roadmap

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -22,11 +22,19 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import ChatbotWidget from '@/components/ChatbotWidget';
+import { ExplanationPanel } from '@/components/ExplanationPanel';
+import { SkillGapView } from '@/components/SkillGapView';
+import { FeedbackForm } from '@/components/FeedbackForm';
+import axios from 'axios';
 
 const CareerDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'overview' | 'salary' | 'education' | 'skills'>('overview');
+    const [explanationData, setExplanationData] = useState<any>(null);
+    const [loadingExplanation, setLoadingExplanation] = useState(false);
+    const [skillGapData, setSkillGapData] = useState<any>(null);
+    const [loadingSkillGap, setLoadingSkillGap] = useState(false);
 
     // Mock data - replace with API call
     const career = {
@@ -115,6 +123,72 @@ const CareerDetail = () => {
     const formatCurrency = (value: number) => {
         return `₹${(value / 100000).toFixed(1)}L`;
     };
+
+    // Fetch explanation data
+    useEffect(() => {
+        const fetchExplanation = async () => {
+            try {
+                setLoadingExplanation(true);
+                const token = localStorage.getItem('token');
+
+                if (!token) {
+                    console.log('No token found, skipping explanation fetch');
+                    return;
+                }
+
+                const response = await axios.get(
+                    `http://localhost:5000/api/predict/explain?career=${encodeURIComponent(career.title)}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+
+                setExplanationData(response.data);
+            } catch (error) {
+                console.error('Error fetching explanation:', error);
+                // Silently fail - explanation is optional
+            } finally {
+                setLoadingExplanation(false);
+            }
+        };
+
+        fetchExplanation();
+    }, [career.title]);
+
+    // Fetch skill gap data
+    useEffect(() => {
+        const fetchSkillGap = async () => {
+            try {
+                setLoadingSkillGap(true);
+                const token = localStorage.getItem('token');
+
+                if (!token) {
+                    console.log('No token found, skipping skill gap fetch');
+                    return;
+                }
+
+                const response = await axios.get(
+                    `http://localhost:5000/api/skills/gap?career=${encodeURIComponent(career.title)}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+
+                setSkillGapData(response.data);
+            } catch (error) {
+                console.error('Error fetching skill gap:', error);
+                // Silently fail - skill gap is optional
+            } finally {
+                setLoadingSkillGap(false);
+            }
+        };
+
+        fetchSkillGap();
+    }, [career.title]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
@@ -221,6 +295,12 @@ const CareerDetail = () => {
                         </button>
                     ))}
                 </div>
+
+                {/* Explanation Panel */}
+                <ExplanationPanel
+                    explanationData={explanationData}
+                    loading={loadingExplanation}
+                />
 
                 {/* Tab Content */}
                 <motion.div
@@ -399,6 +479,31 @@ const CareerDetail = () => {
                         </div>
                     )}
                 </motion.div>
+
+                {/* Skill Gap Analysis Section */}
+                <div className="mt-12">
+                    <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
+                        <Target className="h-8 w-8 text-blue-400" />
+                        Skill Gap Analysis
+                    </h2>
+                    <SkillGapView skillGapData={skillGapData} loading={loadingSkillGap} />
+                </div>
+
+                {/* Career Recommendation Explanation */}
+                {explanationData && (
+                    <div className="mt-12">
+                        <ExplanationPanel explanationData={explanationData} loading={loadingExplanation} />
+                    </div>
+                )}
+
+                {/* Feedback Section */}
+                <div className="mt-12">
+                    <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
+                        <Star className="h-8 w-8 text-yellow-400" />
+                        Rate This Recommendation
+                    </h2>
+                    <FeedbackForm careerName={career.title} />
+                </div>
 
                 {/* Related Careers */}
                 <div className="mt-16">

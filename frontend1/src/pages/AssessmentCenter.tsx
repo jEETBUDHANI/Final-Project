@@ -75,32 +75,43 @@ export default function AssessmentCenter() {
     const completionRate = (completedAssessments.length / assessments.length) * 100;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+        <div className="min-h-screen bg-black text-white relative overflow-hidden">
+            {/* Animated Background */}
+            <div className="fixed inset-0 z-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20"></div>
+                <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute bottom-1/3 right-1/3 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            </div>
+
             <ChatbotWidget />
 
             {/* Header */}
-            <header className="sticky top-0 z-40 border-b border-gray-800 bg-gray-900/80 backdrop-blur-xl">
+            <header className="sticky top-0 z-50 border-b border-white/10 bg-black/50 backdrop-blur-xl">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
                     <div className="flex items-center gap-4">
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => navigate('/dashboard')}
-                            className="text-gray-400 hover:text-white"
+                            className="text-gray-300 hover:text-white hover:bg-white/10"
                         >
                             <ArrowLeft className="h-4 w-4 mr-2" />
                             Back
                         </Button>
-                        <div className="h-6 w-px bg-gray-700" />
+                        <div className="h-6 w-px bg-white/20" />
                         <Link to="/dashboard" className="flex items-center gap-2">
-                            <Brain className="h-5 w-5 text-blue-400" />
-                            <span className="font-semibold">CareerPath Pro</span>
+                            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                                <Brain className="h-5 w-5 text-white" />
+                            </div>
+                            <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                                CareerPath Pro
+                            </span>
                         </Link>
                     </div>
                 </div>
             </header>
 
-            <div className="container mx-auto px-4 py-12">
+            <div className="relative z-10 container mx-auto px-4 py-12">
                 {/* Header Section */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -112,7 +123,7 @@ export default function AssessmentCenter() {
                             Assessment Center
                         </span>
                     </h1>
-                    <p className="text-xl text-gray-400">
+                    <p className="text-xl text-gray-300">
                         Complete all assessments for comprehensive career guidance
                     </p>
                 </motion.div>
@@ -124,20 +135,20 @@ export default function AssessmentCenter() {
                     transition={{ delay: 0.1 }}
                     className="mb-12"
                 >
-                    <Card className="p-8 bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700">
+                    <Card className="p-8 bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all">
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h3 className="text-2xl font-bold mb-2 flex items-center gap-2">
                                     <Trophy className="w-6 h-6 text-yellow-400" />
                                     Your Progress
                                 </h3>
-                                <p className="text-gray-400">
+                                <p className="text-gray-300">
                                     {completedAssessments.length} of {assessments.length} assessments completed
                                 </p>
                             </div>
                             <div className="text-right">
-                                <div className="text-4xl font-bold text-blue-400">{completionRate.toFixed(0)}%</div>
-                                <div className="text-sm text-gray-400">Complete</div>
+                                <div className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{completionRate.toFixed(0)}%</div>
+                                <div className="text-sm text-gray-300">Complete</div>
                             </div>
                         </div>
                         <Progress value={completionRate} className="h-3" />

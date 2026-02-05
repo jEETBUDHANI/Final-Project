@@ -192,6 +192,33 @@ export default function PersonalityTest() {
     setResults(traits);
     setShowResults(true);
 
+    // Submit to backend API
+    const submitToBackend = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          await fetch('http://localhost:5000/api/assessment/personality', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              answers: answers.map((answer, index) => ({
+                questionId: questions[index].id,
+                value: answer,
+                trait: questions[index].trait
+              }))
+            })
+          });
+        }
+      } catch (error) {
+        console.error('Error submitting to backend:', error);
+      }
+    };
+
+    submitToBackend();
+
     // Mark assessment as completed - save as 'riasec' for /test route or 'personality' for /assessments/personality
     if (user) {
       const assessmentId = location.pathname === '/test' ? 'riasec' : 'personality';

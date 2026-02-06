@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Brain, Send, Loader2, User, Bot, ArrowLeft, Sparkles } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -22,11 +21,11 @@ export default function AIMentor() {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
-            content: "Hi! I'm your AI Career Mentor powered by Google Gemini. I'm here to provide personalized career guidance based on your profile. I can help with:\n\n• Understanding your assessment results\n• Exploring career options\n• Making career decisions\n• Planning skill development\n• Addressing career concerns\n\nWhat would you like to discuss today?",
+            content: "Hi! I'm **Shiv**, your AI Career Mentor 🎯\n\nI'm here to help you with:\n• Career guidance & planning\n• Skill development advice\n• Understanding your assessments\n• Making career decisions\n\nWhat would you like to know?",
             followUpQuestions: [
-                "I'm confused about my career direction",
-                "What skills should I learn for my career?",
-                "How do I choose between different careers?"
+                "What career should I choose?",
+                "How do I learn programming?",
+                "Tell me about my career matches"
             ],
             timestamp: new Date().toISOString()
         }
@@ -35,7 +34,6 @@ export default function AIMentor() {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll to bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -44,7 +42,6 @@ export default function AIMentor() {
         const textToSend = messageText || input.trim();
         if (!textToSend || isLoading) return;
 
-        // Add user message immediately
         const userMessage: Message = {
             role: 'user',
             content: textToSend,
@@ -52,7 +49,7 @@ export default function AIMentor() {
         };
 
         setMessages(prev => [...prev, userMessage]);
-        setInput(''); // Clear input immediately
+        setInput('');
         setIsLoading(true);
 
         try {
@@ -63,7 +60,6 @@ export default function AIMentor() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            // Add assistant response
             const assistantMessage: Message = {
                 role: 'assistant',
                 content: response.data.response,
@@ -78,14 +74,13 @@ export default function AIMentor() {
 
             toast({
                 title: 'Error',
-                description: error.response?.data?.error || 'Failed to get response from AI mentor',
+                description: error.response?.data?.error || 'Failed to get response',
                 variant: 'destructive'
             });
 
-            // Add error message
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment. If the problem persists, check your internet connection.",
+                content: "Sorry, I'm having trouble connecting. Please try again!",
                 timestamp: new Date().toISOString()
             }]);
         } finally {
@@ -96,7 +91,6 @@ export default function AIMentor() {
     const handleSuggestionClick = (suggestion: string) => {
         if (isLoading) return;
         setInput(suggestion);
-        // Auto-send after a brief delay to show the input
         setTimeout(() => handleSend(suggestion), 100);
     };
 
@@ -108,156 +102,135 @@ export default function AIMentor() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-            <header className="border-b bg-background/80 backdrop-blur-lg sticky top-0 z-50">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+            {/* Header */}
+            <header className="border-b border-white/10 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate('/dashboard')}
+                            className="text-gray-300 hover:text-white hover:bg-white/10"
+                        >
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
-                        <div className="flex items-center gap-2">
-                            <div className="gradient-primary flex h-10 w-10 items-center justify-center rounded-xl">
-                                <Brain className="h-6 w-6 text-primary-foreground" />
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600">
+                                <Brain className="h-6 w-6 text-white" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xl font-bold text-gradient">AI Career Mentor</span>
-                                    <Sparkles className="h-4 w-4 text-primary" />
+                                    <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                                        AI Career Mentor
+                                    </span>
+                                    <Sparkles className="h-4 w-4 text-yellow-400" />
                                 </div>
-                                <p className="text-xs text-muted-foreground">Powered by Google Gemini</p>
+                                <p className="text-xs text-gray-400">Powered by OpenRouter AI</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </header>
 
+            {/* Chat Container */}
             <main className="container mx-auto px-4 py-8 max-w-4xl">
-                <Card className="h-[calc(100vh-12rem)] flex flex-col">
-                    <CardHeader className="border-b flex-shrink-0">
-                        <CardTitle className="flex items-center gap-2">
-                            <Bot className="h-5 w-5 text-primary" />
-                            Chat with Your Mentor
-                        </CardTitle>
-                    </CardHeader>
-
-                    <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-                        {/* Messages - Using native scroll instead of ScrollArea */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {messages.map((message, index) => (
-                                <div key={index} className="animate-in fade-in slide-in-from-bottom-2">
-                                    <div
-                                        className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'
-                                            }`}
-                                    >
-                                        {message.role === 'assistant' && (
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
-                                                <Bot className="h-5 w-5 text-primary-foreground" />
-                                            </div>
-                                        )}
-
-                                        <div
-                                            className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === 'user'
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-muted'
-                                                }`}
-                                        >
-                                            <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                                                {message.content}
-                                            </p>
-
-                                            {/* Follow-up Questions - Clickable */}
-                                            {message.followUpQuestions && message.followUpQuestions.length > 0 && (
-                                                <div className="mt-3 space-y-2">
-                                                    <p className="text-xs font-semibold opacity-70">
-                                                        💬 Follow-up questions:
-                                                    </p>
-                                                    {message.followUpQuestions.map((question, qIndex) => (
-                                                        <button
-                                                            key={qIndex}
-                                                            onClick={() => handleSuggestionClick(question)}
-                                                            disabled={isLoading}
-                                                            className="w-full text-left rounded-lg border border-primary/20 bg-background/50 px-3 py-2 text-sm hover:bg-primary/10 hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        >
-                                                            {question}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            {/* Suggested Actions */}
-                                            {message.suggestedActions && message.suggestedActions.length > 0 && (
-                                                <div className="mt-3 space-y-1">
-                                                    <p className="text-xs font-semibold opacity-70">
-                                                        ✨ Suggested actions:
-                                                    </p>
-                                                    <ul className="text-xs space-y-1 opacity-80">
-                                                        {message.suggestedActions.map((action, aIndex) => (
-                                                            <li key={aIndex}>• {action}</li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
+                <div className="h-[calc(100vh-12rem)] flex flex-col bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {messages.map((message, index) => (
+                            <div key={index} className="animate-in fade-in slide-in-from-bottom-2">
+                                <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                    {message.role === 'assistant' && (
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-600">
+                                            <Bot className="h-6 w-6 text-white" />
                                         </div>
-
-                                        {message.role === 'user' && (
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
-                                                <User className="h-5 w-5 text-secondary-foreground" />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {/* Loading indicator */}
-                            {isLoading && (
-                                <div className="flex gap-3 justify-start animate-in fade-in">
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
-                                        <Bot className="h-5 w-5 text-primary-foreground" />
-                                    </div>
-                                    <div className="bg-muted rounded-2xl px-4 py-3">
-                                        <div className="flex items-center gap-2">
-                                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                            <span className="text-sm text-muted-foreground">Thinking...</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Scroll anchor */}
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Input */}
-                        <div className="border-t p-4 flex-shrink-0">
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="Ask me anything about your career..."
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={handleKeyPress}
-                                    disabled={isLoading}
-                                    className="flex-1"
-                                    autoFocus
-                                />
-                                <Button
-                                    onClick={() => handleSend()}
-                                    disabled={!input.trim() || isLoading}
-                                    size="icon"
-                                    className="shrink-0"
-                                >
-                                    {isLoading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Send className="h-4 w-4" />
                                     )}
-                                </Button>
+
+                                    <div className={`max-w-[75%] rounded-2xl px-5 py-4 ${message.role === 'user'
+                                            ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white'
+                                            : 'bg-gray-700/80 text-gray-100'
+                                        }`}>
+                                        <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                                            {message.content}
+                                        </p>
+
+                                        {/* Follow-up Questions */}
+                                        {message.followUpQuestions && message.followUpQuestions.length > 0 && (
+                                            <div className="mt-4 space-y-2">
+                                                <p className="text-xs font-semibold text-blue-300">
+                                                    💬 Quick questions:
+                                                </p>
+                                                {message.followUpQuestions.map((question, qIndex) => (
+                                                    <button
+                                                        key={qIndex}
+                                                        onClick={() => handleSuggestionClick(question)}
+                                                        disabled={isLoading}
+                                                        className="w-full text-left rounded-lg border border-blue-400/30 bg-gray-800/50 px-3 py-2 text-sm text-gray-200 hover:bg-blue-600/20 hover:border-blue-400/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {question}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {message.role === 'user' && (
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-600">
+                                            <User className="h-6 w-6 text-white" />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <p className="mt-2 text-xs text-muted-foreground text-center">
-                                💡 Tip: Ask about career confusion, salary, skills, or decision-making
-                            </p>
+                        ))}
+
+                        {/* Loading */}
+                        {isLoading && (
+                            <div className="flex gap-3 justify-start animate-in fade-in">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-600">
+                                    <Bot className="h-6 w-6 text-white" />
+                                </div>
+                                <div className="bg-gray-700/80 rounded-2xl px-5 py-4">
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                                        <span className="text-sm text-gray-300">Thinking...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Input */}
+                    <div className="border-t border-white/10 p-4 bg-gray-800/80">
+                        <div className="flex gap-3">
+                            <Input
+                                placeholder="Ask me anything about your career..."
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyPress}
+                                disabled={isLoading}
+                                className="flex-1 bg-gray-700/50 border-white/10 text-white placeholder:text-gray-400 focus:border-blue-500"
+                                autoFocus
+                            />
+                            <Button
+                                onClick={() => handleSend()}
+                                disabled={!input.trim() || isLoading}
+                                className="shrink-0 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    <Send className="h-5 w-5" />
+                                )}
+                            </Button>
                         </div>
-                    </CardContent>
-                </Card>
+                        <p className="mt-2 text-xs text-gray-400 text-center">
+                            💡 Ask about careers, skills, learning paths, or anything else!
+                        </p>
+                    </div>
+                </div>
             </main>
         </div>
     );

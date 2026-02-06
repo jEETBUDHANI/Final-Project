@@ -27,23 +27,25 @@ class AICareerMentor:
         career_str = ", ".join(careers) if careers else "None yet"
         
         # System prompt
-        system_prompt = f"""You are Shiv, a friendly and expert AI Career Mentor.
-Your goal is to talk to students like a supportive mentor/friend (similar to ChatGPT).
-Answer EVERY question helpfully, even if it's not strictly about careers (but always tie it back to their growth if possible).
+        system_prompt = f"""You are Shiv, a friendly AI Career Mentor and assistant.
+
+You should behave like ChatGPT or Gemini - answer ANY question the user asks, not just career-related ones.
+Be helpful, conversational, and provide detailed, practical answers.
 
 User Info:
 - Name: {first_name}
-- Personality: {personality}
+- Personality Type: {personality}
 - Top Career Matches: {career_str}
 - Career Clarity Score: {clarity_score}
 
 Guidelines:
-- ALWAYS intro yourself as Shiv if they ask or say hi.
-- Be encouraging, realistic, and insightful.
-- Use simple, warm language. Use emojis occasionally.
-- Keep responses conversational. Not too long, not too short.
-- If they ask about programming languages like Java, Python, etc., give specific, practical advice.
-- Answer the user's EXACT question directly.
+- Answer EVERY question helpfully, even if it's not about careers
+- Be encouraging, realistic, and insightful
+- Use simple, warm language with occasional emojis
+- Keep responses conversational but informative
+- If asked about programming, skills, careers, give specific practical advice
+- If asked general questions, answer them naturally like ChatGPT would
+- Always tie advice back to the user's growth when relevant
 """
 
         # If no API key, use fallback
@@ -75,10 +77,10 @@ Guidelines:
             }
             
             data = {
-                "model": "meta-llama/llama-3.1-8b-instruct:free",  # Free model
+                "model": "liquid/lfm-2.5-1.2b-instruct:free",  # Free model that works!
                 "messages": history_messages,
                 "temperature": 0.7,
-                "max_tokens": 500
+                "max_tokens": 800
             }
             
             response = requests.post(self.api_url, headers=headers, json=data, timeout=30)
@@ -148,6 +150,29 @@ Guidelines:
                 ],
                 'timestamp': datetime.now().isoformat()
             }
+        
+        # Skills/Learning questions
+        if any(word in message for word in ['skill', 'learn', 'how to', 'start', 'begin', 'study']):
+            if 'java' in message:
+                return {
+                    'response': f"Great choice, {user_name}! Here's how to learn Java:\n\n**Step-by-Step Roadmap:**\n\n1. **Basics (1-2 months)**\n   • Syntax, variables, loops, conditions\n   • OOP concepts: Classes, Objects, Inheritance\n   • Practice on HackerRank\n\n2. **Data Structures (2-3 months)**\n   • Arrays, Strings, LinkedList\n   • Stacks, Queues, Trees, Graphs\n   • LeetCode practice daily\n\n3. **Build Projects (3-6 months)**\n   • Library Management System\n   • E-commerce website\n   • Chat application\n\n4. **Frameworks (3-6 months)**\n   • Spring Boot for backend\n   • Hibernate for databases\n\n**Resources:**\n• FreeCodeCamp Java Course (Free)\n• Java Programming Masterclass (Udemy)\n• GeeksforGeeks tutorials\n\nYou'll be job-ready in 6-12 months! 🚀",
+                    'follow_up_questions': [
+                        "Best Java projects for beginners?",
+                        "Java vs Python for career?",
+                        "How to get Java internship?"
+                    ],
+                    'timestamp': datetime.now().isoformat()
+                }
+            else:
+                return {
+                    'response': f"Learning new skills is key to career growth! 📚\n\n**For Tech Careers:**\n• Programming (Python/Java)\n• Data Structures & Algorithms\n• Git & GitHub\n• Problem-solving\n\n**For Business:**\n• Excel & Data Analysis\n• Communication\n• Project Management\n\n**Universal Skills:**\n• Time management\n• Continuous learning\n• Networking\n\nWhich specific skill are you interested in? I can give you a detailed roadmap!",
+                    'follow_up_questions': [
+                        "How to learn programming?",
+                        "Skills for Data Science?",
+                        "How to improve communication?"
+                    ],
+                    'timestamp': datetime.now().isoformat()
+                }
         
         # Career recommendations
         if any(word in message for word in ['career', 'job', 'recommend', 'best for me']):

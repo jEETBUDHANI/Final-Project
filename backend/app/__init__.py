@@ -28,7 +28,13 @@ def create_app():
     # Configure CORS to allow frontend origins
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:8081", "http://localhost:8082"],
+            "origins": [
+                "http://localhost:8080",
+                "http://localhost:8081",
+                "http://localhost:8082",
+                "http://localhost:80801",
+                "http://localhost:80802"
+            ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True

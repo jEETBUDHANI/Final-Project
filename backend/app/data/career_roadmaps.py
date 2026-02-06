@@ -3,36 +3,25 @@
 # Career roadmap templates
 CAREER_ROADMAPS = {
     "Software Engineer": {
-        "year_1": {
-            "focus": "Foundation Building",
-            "academics": ["Data Structures", "Algorithms", "OOP", "Databases"],
-            "skills": ["Python/Java", "Git", "Linux", "SQL"],
-            "projects": ["Personal website", "CLI tool", "Simple web app"],
-            "certifications": ["freeCodeCamp Responsive Web Design"],
-            "milestones": ["Build 3+ projects", "Contribute to open source"]
+        "step_1": {
+            "title": "Pick Your First Language",
+            "description": "Start with Python or Java. Focus on syntax, variables, loops, and basic logic.",
+            "duration": "1-2 months"
         },
-        "year_2": {
-            "focus": "Web Development & Frameworks",
-            "academics": ["Web Technologies", "Software Engineering", "Networks"],
-            "skills": ["React/Angular", "Node.js", "REST APIs", "MongoDB"],
-            "projects": ["Full-stack web app", "E-commerce site", "Blog platform"],
-            "internships": ["Summer internship at tech company"],
-            "certifications": ["AWS Cloud Practitioner"]
+        "step_2": {
+            "title": "Master DSA (Data Structures & Algorithms)",
+            "description": "Build strong logic using Arrays, Strings, Trees, and Graphs. Practice on LeetCode.",
+            "duration": "3-6 months"
         },
-        "year_3": {
-            "focus": "Advanced Topics & Specialization",
-            "academics": ["System Design", "Cloud Computing", "DevOps"],
-            "skills": ["Docker", "Kubernetes", "CI/CD", "Microservices"],
-            "projects": ["Scalable application", "DevOps pipeline"],
-            "internships": ["6-month internship"],
-            "networking": ["LinkedIn", "Tech meetups", "Hackathons"]
+        "step_3": {
+            "title": "Build Real Projects",
+            "description": "Create a full-stack web app or a mobile app. Show your skills in a portfolio.",
+            "duration": "Ongoing"
         },
-        "year_4": {
-            "focus": "Placement & Career Launch",
-            "preparation": ["DSA practice (LeetCode)", "System design", "Resume building"],
-            "targets": ["FAANG", "Product companies", "Startups"],
-            "salary_range": "₹6-25 LPA",
-            "growth_path": ["SDE-1 → SDE-2 → Senior SDE → Tech Lead → Manager"]
+        "step_4": {
+            "title": "Internships & Placements",
+            "description": "Apply for summer internships, prepare your resume, and practice system design.",
+            "duration": "Final Year"
         }
     },
     

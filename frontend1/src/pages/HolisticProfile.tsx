@@ -4,91 +4,140 @@ import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Brain, ArrowLeft, Download, Share2, TrendingUp, Award, Target, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Brain, ArrowLeft, Download, Share2, TrendingUp, Award, Target, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function HolisticProfile() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
+    const [selectedCareer, setSelectedCareer] = useState<any>(null);
+    const [profileData, setProfileData] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Simulate loading
-        setTimeout(() => setLoading(false), 1000);
+        loadProfileData();
     }, []);
 
-    // Mock comprehensive profile data
-    const profileData = {
-        careerClarityScore: 92,
-        personalityArchetype: "The Architect",
-        topCareers: [
-            { name: "Software Engineer", match: 95, salary: "₹12-25 LPA" },
-            { name: "Data Scientist", match: 92, salary: "₹15-30 LPA" },
-            { name: "Product Manager", match: 88, salary: "₹18-35 LPA" }
-        ],
-        aptitudeScore: 78,
-        personalityTraits: {
-            openness: 85,
-            conscientiousness: 92,
-            extraversion: 65,
-            agreeableness: 78,
-            neuroticism: 35
-        },
-        topWorkValues: [
-            { name: "Growth", score: 95 },
-            { name: "Autonomy", score: 88 },
-            { name: "Challenge", score: 85 }
-        ],
-        riskTolerance: {
-            level: "High",
-            score: 72,
-            profile: "Adventurous"
-        },
-        recommendations: [
-            "Consider roles in fast-growing tech startups",
-            "Leverage your strong analytical skills in data-driven positions",
-            "Seek opportunities for continuous learning and innovation",
-            "Build a portfolio of technical projects to showcase skills"
-        ]
+    const loadProfileData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/assessment/holistic`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            console.log('[HolisticProfile] API Response:', response.data);
+
+            if (response.data.profile) {
+                const profile = response.data.profile;
+                const data = profile.profile_data || {};
+
+                // Extract top careers
+                const topCareers = data.top_careers || data.topCareers || [];
+
+                console.log('[HolisticProfile] Top Careers:', topCareers);
+
+                setProfileData({
+                    careerClarityScore: profile.clarity_score || 0,
+                    topCareers: topCareers,
+                    personalityTraits: data.personality || {},
+                    topWorkValues: data.values ? Object.entries(data.values).map(([name, score]) => ({ name, score })).sort((a, b) => (b.score as number) - (a.score as number)).slice(0, 3) : [],
+                    riskTolerance: data.risk_tolerance || { level: 'Medium', score: 50 },
+                    riasecScores: data.riasec || {},
+                    aptitudeScore: data.aptitude ? Object.values(data.aptitude).reduce((a: number, b: any) => a + b, 0) / Object.keys(data.aptitude).length : 0
+                });
+
+                if (topCareers.length > 0) {
+                    setSelectedCareer(topCareers[0]);
+                }
+            } else {
+                setError('No profile data found. Please complete your assessments first.');
+            }
+        } catch (err: any) {
+            console.error('[HolisticProfile] Error:', err);
+            setError('Failed to load profile. Please complete your assessments first.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
                 <div className="text-center">
-                    <Brain className="w-16 h-16 text-blue-400 animate-pulse mx-auto mb-4" />
-                    <h2 className="text-2xl font-bold mb-2">Generating Your Holistic Profile...</h2>
-                    <p className="text-gray-400">Analyzing all your assessment results</p>
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
+                    <p className="text-gray-300">Loading your profile...</p>
                 </div>
             </div>
         );
     }
 
+    if (error || !profileData) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
+                <div className="text-center max-w-md">
+                    <div className="text-6xl mb-4">📊</div>
+                    <h2 className="text-2xl font-bold mb-4">Complete Your Assessments</h2>
+                    <p className="text-gray-300 mb-8">{error || 'Please complete all assessments to view your holistic profile.'}</p>
+                    <Button onClick={() => navigate('/assessments')} className="bg-gradient-to-r from-blue-600 to-purple-600">
+                        Go to Assessments
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // Career roadmap data
+    const careerRoadmaps: any = {
+        "Software Engineer": [
+            { step: 1, title: "Pick Your Language", desc: "Start with Python or Java", icon: "💻" },
+            { step: 2, title: "Master DSA", desc: "Data Structures & Algorithms", icon: "🧠" },
+            { step: 3, title: "Build Projects", desc: "Create a portfolio", icon: "🚀" },
+            { step: 4, title: "Internships", desc: "Get real-world experience", icon: "🎯" }
+        ],
+        "Data Scientist": [
+            { step: 1, title: "Learn Python & Stats", desc: "Foundation in programming and statistics", icon: "📊" },
+            { step: 2, title: "Machine Learning", desc: "Study ML algorithms and frameworks", icon: "🤖" },
+            { step: 3, title: "Build ML Projects", desc: "Work on real datasets", icon: "📈" },
+            { step: 4, title: "Specialize", desc: "Choose your domain (NLP, CV, etc.)", icon: "🎓" }
+        ],
+        "UX Designer": [
+            { step: 1, title: "Design Tools", desc: "Master Figma, Adobe XD", icon: "🎨" },
+            { step: 2, title: "User Research", desc: "Learn research methodologies", icon: "🔍" },
+            { step: 3, title: "Build Portfolio", desc: "Create case studies", icon: "📱" },
+            { step: 4, title: "Get Experience", desc: "Internships and freelance", icon: "💼" }
+        ]
+    };
+
+    const selectedRoadmap = selectedCareer ? (careerRoadmaps[selectedCareer.name] || careerRoadmaps["Software Engineer"]) : [];
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
             {/* Header */}
-            <header className="sticky top-0 z-40 border-b border-gray-800 bg-gray-900/80 backdrop-blur-xl">
+            <header className="sticky top-0 z-50 border-b border-white/10 bg-black/50 backdrop-blur-xl">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate('/dashboard')}
-                            className="text-gray-400 hover:text-white"
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back to Dashboard
-                        </Button>
-                        <div className="h-6 w-px bg-gray-700" />
-                        <div className="flex items-center gap-2">
-                            <Brain className="h-5 w-5 text-blue-400" />
-                            <span className="font-semibold">Holistic Career Profile</span>
-                        </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/dashboard')}
+                        className="text-gray-300 hover:text-white"
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Dashboard
+                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Brain className="h-6 w-6 text-blue-400" />
+                        <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            Holistic Profile
+                        </span>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="border-gray-700 text-gray-300 hover:bg-gray-800">
+                        <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
                             <Download className="h-4 w-4 mr-2" />
-                            Download PDF
+                            Export
                         </Button>
-                        <Button variant="outline" size="sm" className="border-gray-700 text-gray-300 hover:bg-gray-800">
+                        <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
                             <Share2 className="h-4 w-4 mr-2" />
                             Share
                         </Button>
@@ -96,217 +145,128 @@ export default function HolisticProfile() {
                 </div>
             </header>
 
-            <div className="container mx-auto px-4 py-12 max-w-6xl">
-                {/* Hero Section */}
+            <div className="container mx-auto px-4 py-12 max-w-7xl">
+                {/* Career Clarity Score */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-12"
+                    className="mb-12"
                 >
-                    <div className="inline-block p-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-6">
-                        <Sparkles className="w-12 h-12 text-white" />
-                    </div>
-                    <h1 className="text-5xl font-bold mb-4">
-                        <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                            Your Holistic Career Profile
-                        </span>
-                    </h1>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        A comprehensive analysis combining all your assessment results to guide your career journey
-                    </p>
+                    <Card className="bg-gradient-to-br from-blue-600 to-purple-600 border-0 p-8 text-center">
+                        <Award className="w-16 h-16 mx-auto mb-4 text-yellow-300" />
+                        <h2 className="text-3xl font-bold mb-2">Career Clarity Score</h2>
+                        <div className="text-6xl font-bold mb-4">{Math.round(profileData.careerClarityScore)}%</div>
+                        <Progress value={profileData.careerClarityScore} className="h-3 mb-4" />
+                        <p className="text-blue-100">
+                            {profileData.careerClarityScore >= 75 ? 'Excellent clarity on your career path!' :
+                                profileData.careerClarityScore >= 50 ? 'Good understanding of your career direction' :
+                                    'Keep exploring to gain more clarity'}
+                        </p>
+                    </Card>
                 </motion.div>
 
-                {/* Career Clarity Score */}
+                {/* Top Career Matches */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                     className="mb-12"
                 >
-                    <Card className="p-12 bg-gradient-to-br from-blue-900/50 to-purple-900/50 border-blue-700 text-center">
-                        <Award className="w-16 h-16 text-yellow-400 mx-auto mb-6" />
-                        <h2 className="text-3xl font-bold mb-4">Career Clarity Score</h2>
-                        <div className="text-8xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                            {profileData.careerClarityScore}
-                        </div>
-                        <p className="text-xl text-gray-300 mb-6">
-                            You have exceptional clarity about your career direction!
-                        </p>
-                        <Progress value={profileData.careerClarityScore} className="h-4 max-w-md mx-auto" />
-                    </Card>
-                </motion.div>
-
-                {/* Main Grid */}
-                <div className="grid md:grid-cols-2 gap-8 mb-12">
-                    {/* Personality Archetype */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        <Card className="p-8 bg-gray-800/50 border-gray-700 h-full">
-                            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                                <span className="text-3xl">🎭</span>
-                                Personality Archetype
-                            </h3>
-                            <div className="text-center mb-6">
-                                <div className="text-4xl font-bold text-purple-400 mb-2">
-                                    {profileData.personalityArchetype}
-                                </div>
-                                <p className="text-gray-400">Creative, Strategic, Innovative</p>
-                            </div>
-                            <div className="space-y-3">
-                                {Object.entries(profileData.personalityTraits).map(([trait, score]) => (
-                                    <div key={trait}>
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-sm capitalize text-gray-300">{trait}</span>
-                                            <span className="text-sm font-semibold text-purple-400">{score}%</span>
-                                        </div>
-                                        <Progress value={score} className="h-2" />
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    </motion.div>
-
-                    {/* Top Career Matches */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        <Card className="p-8 bg-gray-800/50 border-gray-700 h-full">
-                            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                                <TrendingUp className="w-6 h-6 text-green-400" />
-                                Top Career Matches
-                            </h3>
-                            <div className="space-y-4">
-                                {profileData.topCareers.map((career, index) => (
-                                    <div
-                                        key={career.name}
-                                        className="p-4 bg-gray-900/50 rounded-lg border border-gray-700 hover:border-green-500 transition-colors cursor-pointer"
-                                        onClick={() => navigate(`/careers/${index + 1}`)}
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="font-bold text-white">{career.name}</h4>
-                                            <span className="text-2xl font-bold text-green-400">{career.match}%</span>
-                                        </div>
-                                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                                            <span>💰 {career.salary}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <Button
-                                className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600"
-                                onClick={() => navigate('/careers')}
-                            >
-                                Explore All Careers
-                            </Button>
-                        </Card>
-                    </motion.div>
-                </div>
-
-                {/* Assessment Breakdown */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="mb-12"
-                >
-                    <h2 className="text-3xl font-bold mb-6">Assessment Breakdown</h2>
+                    <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                        <Target className="w-6 h-6 text-blue-400" />
+                        Your Top Career Matches
+                    </h3>
                     <div className="grid md:grid-cols-3 gap-6">
-                        {/* Aptitude */}
-                        <Card className="p-6 bg-gradient-to-br from-purple-900/50 to-pink-900/50 border-purple-700">
-                            <div className="text-4xl mb-3">🧠</div>
-                            <h3 className="text-xl font-bold mb-2 text-white">Aptitude</h3>
-                            <div className="text-4xl font-bold text-purple-400 mb-2">{profileData.aptitudeScore}%</div>
-                            <p className="text-sm text-gray-300">Strong logical reasoning</p>
-                        </Card>
-
-                        {/* Work Values */}
-                        <Card className="p-6 bg-gradient-to-br from-orange-900/50 to-red-900/50 border-orange-700">
-                            <div className="text-4xl mb-3">💎</div>
-                            <h3 className="text-xl font-bold mb-2 text-white">Work Values</h3>
-                            <div className="space-y-1 mb-2">
-                                {profileData.topWorkValues.map((value, i) => (
-                                    <div key={value.name} className="text-sm text-orange-300">
-                                        {i + 1}. {value.name} ({value.score}%)
+                        {profileData.topCareers.map((career: any, index: number) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.2 + index * 0.1 }}
+                                whileHover={{ scale: 1.05 }}
+                                onClick={() => setSelectedCareer(career)}
+                                className={`cursor-pointer p-6 rounded-xl transition-all ${selectedCareer?.name === career.name
+                                        ? 'bg-gradient-to-br from-blue-600 to-purple-600 ring-2 ring-blue-400'
+                                        : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                                    }`}
+                            >
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="font-bold text-lg">{career.name}</h4>
+                                    <Sparkles className="w-5 h-5 text-yellow-400" />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-300">Match</span>
+                                        <span className="text-green-400 font-semibold">{career.match}%</span>
                                     </div>
-                                ))}
-                            </div>
-                        </Card>
-
-                        {/* Risk Tolerance */}
-                        <Card className="p-6 bg-gradient-to-br from-yellow-900/50 to-orange-900/50 border-yellow-700">
-                            <div className="text-4xl mb-3">🎯</div>
-                            <h3 className="text-xl font-bold mb-2 text-white">Risk Tolerance</h3>
-                            <div className="text-4xl font-bold text-yellow-400 mb-2">{profileData.riskTolerance.score}%</div>
-                            <p className="text-sm text-gray-300">{profileData.riskTolerance.profile} risk-taker</p>
-                        </Card>
+                                    {career.salary && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-300">Salary</span>
+                                            <span className="font-semibold">{career.salary}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 </motion.div>
 
-                {/* Recommendations */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="mb-12"
-                >
-                    <Card className="p-8 bg-gray-800/50 border-gray-700">
+                {/* Career Roadmap */}
+                {selectedCareer && selectedRoadmap.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="mb-12"
+                    >
                         <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <Target className="w-6 h-6 text-blue-400" />
-                            Personalized Recommendations
+                            <TrendingUp className="w-6 h-6 text-blue-400" />
+                            Roadmap: {selectedCareer.name}
                         </h3>
-                        <div className="grid md:grid-cols-2 gap-4">
-                            {profileData.recommendations.map((rec, index) => (
-                                <div key={index} className="flex items-start gap-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-                                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                                    <p className="text-gray-300">{rec}</p>
-                                </div>
+                        <div className="space-y-6">
+                            {selectedRoadmap.map((step: any, index: number) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.4 + index * 0.1 }}
+                                >
+                                    <Card className="bg-white/5 border-white/10 p-6 hover:bg-white/10 transition-all">
+                                        <div className="flex items-start gap-6">
+                                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-2xl">
+                                                {step.icon}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-xl font-bold mb-2">Step {step.step}: {step.title}</h4>
+                                                <p className="text-gray-300">{step.desc}</p>
+                                            </div>
+                                            <CheckCircle2 className="w-6 h-6 text-green-400" />
+                                        </div>
+                                    </Card>
+                                    {index < selectedRoadmap.length - 1 && (
+                                        <div className="flex justify-center py-2">
+                                            <div className="w-0.5 h-8 bg-gradient-to-b from-blue-500 to-purple-600"></div>
+                                        </div>
+                                    )}
+                                </motion.div>
                             ))}
                         </div>
-                    </Card>
-                </motion.div>
+                    </motion.div>
+                )}
 
-                {/* Next Steps */}
+                {/* Actions */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
+                    className="flex gap-4 justify-center"
                 >
-                    <Card className="p-12 bg-gradient-to-r from-blue-600 to-purple-600 border-0 text-center">
-                        <h3 className="text-3xl font-bold mb-4">Ready to Take Action?</h3>
-                        <p className="text-xl mb-8 text-blue-100 max-w-2xl mx-auto">
-                            Use these insights to explore careers, build your roadmap, and connect with an AI mentor for guidance
-                        </p>
-                        <div className="flex flex-wrap gap-4 justify-center">
-                            <Button
-                                size="lg"
-                                className="bg-white text-purple-600 hover:bg-gray-100"
-                                onClick={() => navigate('/careers')}
-                            >
-                                Explore Careers
-                            </Button>
-                            <Button
-                                size="lg"
-                                variant="outline"
-                                className="border-white text-white hover:bg-white/20"
-                                onClick={() => navigate('/roadmap')}
-                            >
-                                Build Your Roadmap
-                            </Button>
-                            <Button
-                                size="lg"
-                                variant="outline"
-                                className="border-white text-white hover:bg-white/20"
-                                onClick={() => navigate('/mentor')}
-                            >
-                                Talk to AI Mentor
-                            </Button>
-                        </div>
-                    </Card>
+                    <Button size="lg" onClick={() => navigate('/roadmap')} className="bg-gradient-to-r from-blue-600 to-purple-600">
+                        View Full Roadmap
+                    </Button>
+                    <Button size="lg" variant="outline" onClick={() => navigate('/careers')}>
+                        Explore Careers
+                    </Button>
                 </motion.div>
             </div>
         </div>

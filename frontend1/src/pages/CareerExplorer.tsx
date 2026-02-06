@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Brain, ArrowLeft, Search, TrendingUp, BarChart3, Filter } from 'lucide-react';
 import ChatbotWidget from '@/components/ChatbotWidget';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Comprehensive career data
 const CAREERS = [
@@ -37,12 +40,61 @@ export default function CareerExplorer() {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [matchedCareerNames, setMatchedCareerNames] = useState<string[]>([]);
+    const [hasProfile, setHasProfile] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const filteredCareers = CAREERS.filter(career => {
+    useEffect(() => {
+        loadMatchedCareers();
+    }, []);
+
+    const loadMatchedCareers = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/assessment/holistic`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            console.log('[CareerExplorer] API Response:', response.data);
+
+            if (response.data.profile && response.data.profile.profile_data) {
+                const profileData = response.data.profile.profile_data;
+                console.log('[CareerExplorer] Profile Data:', profileData);
+                const careers = profileData.top_careers || profileData.topCareers || [];
+                console.log('[CareerExplorer] Matched Careers:', careers);
+                const careerNames = careers.map((c: any) => c.name || c);
+                setMatchedCareerNames(careerNames);
+                setHasProfile(true);
+            }
+        } catch (error) {
+            console.error('[CareerExplorer] Failed to load matched careers:', error);
+            setHasProfile(false);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Filter careers: if user has profile, show only matched careers; otherwise show all
+    const availableCareers = hasProfile && matchedCareerNames.length > 0
+        ? CAREERS.filter(career => matchedCareerNames.some(name => career.title.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(career.title.toLowerCase())))
+        : CAREERS;
+
+    const filteredCareers = availableCareers.filter(career => {
         const matchesSearch = career.title.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = selectedCategory === 'All' || career.category === selectedCategory;
         return matchesSearch && matchesCategory;
     });
+
+    if (isLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-black">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading your matched careers...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-black text-white relative overflow-hidden">
@@ -90,12 +142,22 @@ export default function CareerExplorer() {
                 >
                     <h1 className="text-4xl md:text-5xl font-bold mb-4">
                         <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                            Explore Careers
+                            {hasProfile ? 'Your Matched Careers' : 'Explore Careers'}
                         </span>
                     </h1>
                     <p className="text-xl text-gray-300 mb-8">
-                        Discover {CAREERS.length}+ career paths with detailed information on salary, demand, and growth
+                        {hasProfile
+                            ? `Showing ${filteredCareers.length} careers matched to your profile`
+                            : `Discover ${CAREERS.length}+ career paths with detailed information on salary, demand, and growth`
+                        }
                     </p>
+                    {!hasProfile && (
+                        <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                            <p className="text-blue-300">
+                                💡 <strong>Tip:</strong> Complete your assessments to see personalized career matches!
+                            </p>
+                        </div>
+                    )}
 
                     {/* Search Bar */}
                     <div className="relative max-w-2xl">

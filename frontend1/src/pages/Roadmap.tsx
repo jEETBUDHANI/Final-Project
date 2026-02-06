@@ -1,65 +1,149 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { roadmapsApi } from '@/services/api';
-import { Loader2, ArrowRight, CheckCircle2, Brain, LogOut } from 'lucide-react';
+import { Loader2, ArrowRight, CheckCircle2, Brain, LogOut, Sparkles, TrendingUp, Target } from 'lucide-react';
 import ChatbotWidget from '@/components/ChatbotWidget';
+import axios from 'axios';
 
-interface RoadmapContent {
-    current_year: { title: string; tasks: string[]; milestones: string[] };
-    next_year: { title: string; tasks: string[]; milestones: string[] };
-    future: { goals: string[]; potential_careers: string[] };
-    personalized_note?: string;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+interface CareerMatch {
+    name: string;
+    match: number;
+    description: string;
 }
 
-interface RoadmapData {
-    id: number;
-    stage: string;
-    content: RoadmapContent;
-    created_at: string;
-    updated_at: string;
-}
+const CAREER_ROADMAPS: any = {
+    "Software Engineer": {
+        steps: [
+            { title: "Pick Your First Language", desc: "Start with Python or Java. Focus on syntax, variables, loops.", duration: "1-2 months", icon: "💻" },
+            { title: "Master DSA", desc: "Build strong logic using Arrays, Strings, Trees, Graphs. Practice on LeetCode.", duration: "3-6 months", icon: "🧠" },
+            { title: "Build Real Projects", desc: "Create a full-stack web app or mobile app. Show your skills in a portfolio.", duration: "Ongoing", icon: "🚀" },
+            { title: "Internships & Placements", desc: "Apply for summer internships, prepare resume, practice system design.", duration: "Final Year", icon: "🎯" }
+        ]
+    },
+    "Engineer": {
+        steps: [
+            { title: "Pick Your First Language", desc: "Start with Python or Java. Focus on syntax, variables, loops.", duration: "1-2 months", icon: "💻" },
+            { title: "Master DSA", desc: "Build strong logic using Arrays, Strings, Trees, Graphs. Practice on LeetCode.", duration: "3-6 months", icon: "🧠" },
+            { title: "Build Real Projects", desc: "Create a full-stack web app or mobile app. Show your skills in a portfolio.", duration: "Ongoing", icon: "🚀" },
+            { title: "Internships & Placements", desc: "Apply for summer internships, prepare resume, practice system design.", duration: "Final Year", icon: "🎯" }
+        ]
+    },
+    "Data Scientist": {
+        steps: [
+            { title: "Learn Python & Stats", desc: "Master Python, NumPy, Pandas, and statistical concepts.", duration: "2-3 months", icon: "📊" },
+            { title: "Machine Learning", desc: "Study ML algorithms, Scikit-learn, TensorFlow basics.", duration: "3-4 months", icon: "🤖" },
+            { title: "Build ML Projects", desc: "Create prediction models, work on Kaggle competitions.", duration: "Ongoing", icon: "📈" },
+            { title: "Specialize & Apply", desc: "Choose specialization (NLP, CV, etc.), build portfolio, apply for roles.", duration: "Final Year", icon: "🎓" }
+        ]
+    },
+    "Scientist": {
+        steps: [
+            { title: "Build Strong Foundation", desc: "Master core science subjects (Physics, Chemistry, Biology). Focus on fundamentals.", duration: "1-2 years", icon: "🔬" },
+            { title: "Research Skills", desc: "Learn research methodology, data analysis, scientific writing.", duration: "6-12 months", icon: "📚" },
+            { title: "Lab Experience", desc: "Work in research labs, conduct experiments, publish papers.", duration: "Ongoing", icon: "🧪" },
+            { title: "Advanced Degree", desc: "Pursue Masters/PhD, specialize in your field, network with researchers.", duration: "3-5 years", icon: "🎓" }
+        ]
+    },
+    "Researcher": {
+        steps: [
+            { title: "Academic Excellence", desc: "Maintain strong grades, read research papers, understand current trends.", duration: "Ongoing", icon: "📖" },
+            { title: "Research Methodology", desc: "Learn qualitative and quantitative research methods, statistics.", duration: "6 months", icon: "📊" },
+            { title: "Publish Papers", desc: "Conduct original research, write papers, present at conferences.", duration: "Ongoing", icon: "📝" },
+            { title: "PhD & Beyond", desc: "Pursue doctoral studies, become subject matter expert, mentor students.", duration: "4-6 years", icon: "🎓" }
+        ]
+    },
+    "Analyst": {
+        steps: [
+            { title: "Learn Excel & SQL", desc: "Master Excel formulas, pivot tables, SQL queries for data extraction.", duration: "1-2 months", icon: "📊" },
+            { title: "Data Visualization", desc: "Learn Tableau, Power BI, create dashboards and reports.", duration: "2-3 months", icon: "📈" },
+            { title: "Business Understanding", desc: "Understand business metrics, KPIs, industry-specific analysis.", duration: "3-6 months", icon: "💼" },
+            { title: "Advanced Analytics", desc: "Learn Python/R for statistical analysis, predictive modeling.", duration: "Ongoing", icon: "🤖" }
+        ]
+    },
+    "Doctor": {
+        steps: [
+            { title: "Medical School", desc: "Complete MBBS (5.5 years), focus on anatomy, physiology, pathology.", duration: "5.5 years", icon: "🩺" },
+            { title: "Internship", desc: "Complete 1-year rotating internship in various departments.", duration: "1 year", icon: "🏥" },
+            { title: "Specialization", desc: "Choose specialty (MD/MS), complete 3-year residency program.", duration: "3 years", icon: "💉" },
+            { title: "Practice & Growth", desc: "Start practice, continuous learning, attend conferences, research.", duration: "Ongoing", icon: "⚕️" }
+        ]
+    },
+    "Accountant": {
+        steps: [
+            { title: "Learn Accounting Basics", desc: "Master double-entry bookkeeping, financial statements, accounting principles.", duration: "2-3 months", icon: "📚" },
+            { title: "Accounting Software", desc: "Learn Tally, QuickBooks, SAP for practical accounting work.", duration: "1-2 months", icon: "💻" },
+            { title: "Taxation & Compliance", desc: "Study GST, Income Tax, TDS, company law compliance.", duration: "3-6 months", icon: "📋" },
+            { title: "CA/CMA Certification", desc: "Pursue professional certification (CA/CMA), gain experience, start practice.", duration: "3-5 years", icon: "🎓" }
+        ]
+    },
+    "Banker": {
+        steps: [
+            { title: "Banking Fundamentals", desc: "Learn banking operations, financial products, customer service.", duration: "2-3 months", icon: "🏦" },
+            { title: "Financial Analysis", desc: "Master credit analysis, risk assessment, loan processing.", duration: "3-6 months", icon: "📊" },
+            { title: "Banking Exams", desc: "Prepare for IBPS, SBI PO, RBI exams for government banking jobs.", duration: "6-12 months", icon: "📝" },
+            { title: "Career Growth", desc: "Gain experience, pursue MBA Finance, move to senior roles.", duration: "Ongoing", icon: "📈" }
+        ]
+    },
+    "Teacher": {
+        steps: [
+            { title: "Subject Mastery", desc: "Become expert in your subject, understand curriculum deeply.", duration: "Ongoing", icon: "📚" },
+            { title: "Teaching Skills", desc: "Learn pedagogy, classroom management, student psychology.", duration: "6 months", icon: "👨‍🏫" },
+            { title: "B.Ed/Teaching Certification", desc: "Complete B.Ed or teaching certification program.", duration: "1-2 years", icon: "🎓" },
+            { title: "Teaching Practice", desc: "Gain experience, develop teaching style, continuous improvement.", duration: "Ongoing", icon: "✏️" }
+        ]
+    },
+    "UX Designer": {
+        steps: [
+            { title: "Learn Design Tools", desc: "Master Figma, Adobe XD, wireframing, and prototyping.", duration: "1-2 months", icon: "🎨" },
+            { title: "User Research", desc: "Learn user interviews, usability testing, A/B testing methods.", duration: "2-3 months", icon: "🔍" },
+            { title: "Build Portfolio", desc: "Create 3-5 case studies showing your design process.", duration: "Ongoing", icon: "📱" },
+            { title: "Internships & Jobs", desc: "Apply to startups and product companies with your portfolio.", duration: "Final Year", icon: "💼" }
+        ]
+    }
+};
 
 const Roadmap = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [roadmap, setRoadmap] = useState<RoadmapData | null>(null);
+    const [matchedCareers, setMatchedCareers] = useState<CareerMatch[]>([]);
+    const [selectedCareer, setSelectedCareer] = useState<CareerMatch | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [showStageSelector, setShowStageSelector] = useState(false);
+    const [hasProfile, setHasProfile] = useState(false);
 
     useEffect(() => {
-        loadRoadmap();
+        loadMatchedCareers();
     }, []);
 
-    const loadRoadmap = async () => {
+    const loadMatchedCareers = async () => {
         try {
-            const response = await roadmapsApi.getRoadmap();
-            setRoadmap(response.roadmap);
-        } catch (error: any) {
-            if (error.response?.status === 404) {
-                setShowStageSelector(true);
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/assessment/holistic`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            console.log('[Roadmap] API Response:', response.data);
+
+            if (response.data.profile && response.data.profile.profile_data) {
+                const profileData = response.data.profile.profile_data;
+                console.log('[Roadmap] Profile Data:', profileData);
+                const careers = profileData.top_careers || profileData.topCareers || [];
+                console.log('[Roadmap] Matched Careers:', careers);
+                setMatchedCareers(careers);
+                setHasProfile(true);
+                if (careers.length > 0) {
+                    setSelectedCareer(careers[0]);
+                }
             }
+        } catch (error) {
+            console.error('[Roadmap] Failed to load matched careers:', error);
+            setHasProfile(false);
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const generateRoadmap = async (stage: string, stream?: string) => {
-        setIsGenerating(true);
-        try {
-            const response = await roadmapsApi.generateRoadmap({
-                stage: stage,
-                current_stream: stream
-            });
-            setRoadmap(response.roadmap);
-            setShowStageSelector(false);
-        } catch (error) {
-            console.error('Failed to generate roadmap:', error);
-        } finally {
-            setIsGenerating(false);
         }
     };
 
@@ -70,85 +154,68 @@ const Roadmap = () => {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-screen items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex min-h-screen items-center justify-center bg-black">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
             </div>
         );
     }
 
-    if (showStageSelector) {
+    if (!hasProfile || matchedCareers.length === 0) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-8">
-                <div className="container mx-auto max-w-4xl">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-center text-2xl">Create Your Personalized Roadmap</CardTitle>
-                            <p className="text-center text-muted-foreground">
-                                Tell us your current academic stage to get started
-                            </p>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-4 sm:grid-cols-3">
-                                <Button
-                                    variant="outline"
-                                    className="h-auto flex-col gap-2 p-6"
-                                    onClick={() => generateRoadmap('9-10')}
-                                    disabled={isGenerating}
-                                >
-                                    <span className="text-2xl">📚</span>
-                                    <span className="font-semibold">Class 9-10</span>
-                                    <span className="text-xs text-muted-foreground">Foundation Stage</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-auto flex-col gap-2 p-6"
-                                    onClick={() => generateRoadmap('11-12')}
-                                    disabled={isGenerating}
-                                >
-                                    <span className="text-2xl">🎓</span>
-                                    <span className="font-semibold">Class 11-12</span>
-                                    <span className="text-xs text-muted-foreground">Exam Prep Stage</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-auto flex-col gap-2 p-6"
-                                    onClick={() => generateRoadmap('college')}
-                                    disabled={isGenerating}
-                                >
-                                    <span className="text-2xl">🎯</span>
-                                    <span className="font-semibold">College</span>
-                                    <span className="text-xs text-muted-foreground">Career Building</span>
-                                </Button>
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+                <ChatbotWidget />
+                <header className="border-b border-white/10 bg-black/50 backdrop-blur-lg">
+                    <div className="container mx-auto flex h-16 items-center justify-between px-4">
+                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+                                <Brain className="h-6 w-6 text-white" />
                             </div>
-                            {isGenerating && (
-                                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Generating your personalized roadmap...
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                            <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">CareerPath Pro</span>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={handleLogout}>
+                            <LogOut className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </header>
+
+                <div className="container mx-auto px-4 py-20 max-w-4xl text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <div className="text-8xl mb-8">🎯</div>
+                        <h1 className="text-4xl font-bold mb-4">Complete Your Assessments First</h1>
+                        <p className="text-xl text-gray-400 mb-8">
+                            To see your personalized career roadmap, you need to complete your assessments and view your Holistic Profile.
+                        </p>
+                        <div className="flex gap-4 justify-center">
+                            <Button size="lg" onClick={() => navigate('/assessments')} className="bg-gradient-to-r from-blue-600 to-purple-600">
+                                Take Assessments
+                            </Button>
+                            <Button size="lg" variant="outline" onClick={() => navigate('/dashboard')}>
+                                Back to Dashboard
+                            </Button>
+                        </div>
+                    </motion.div>
                 </div>
             </div>
         );
     }
 
-    if (!roadmap) {
-        return null;
-    }
+    const roadmap = selectedCareer ? CAREER_ROADMAPS[selectedCareer.name] || CAREER_ROADMAPS["Software Engineer"] : null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
             <ChatbotWidget />
 
             {/* Header */}
-            <header className="border-b bg-background/80 backdrop-blur-lg">
+            <header className="sticky top-0 z-50 border-b border-white/10 bg-black/50 backdrop-blur-xl">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                        <div className="gradient-primary flex h-10 w-10 items-center justify-center rounded-xl">
-                            <Brain className="h-6 w-6 text-primary-foreground" />
+                        <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+                            <Brain className="h-6 w-6 text-white" />
                         </div>
-                        <span className="text-xl font-bold text-gradient">CareerPath Pro</span>
+                        <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">CareerPath Pro</span>
                     </div>
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" onClick={() => navigate('/dashboard')}>Dashboard</Button>
@@ -159,142 +226,117 @@ const Roadmap = () => {
                 </div>
             </header>
 
-            <main className="container mx-auto px-4 py-8 max-w-6xl">
+            <main className="container mx-auto px-4 py-12 max-w-7xl">
                 {/* Page Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">
-                        Your <span className="text-gradient">Academic Roadmap</span>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-12 text-center"
+                >
+                    <h1 className="text-5xl font-bold mb-4">
+                        Your <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Career Roadmap</span>
                     </h1>
-                    <p className="text-muted-foreground">
-                        Stage: <span className="font-medium text-foreground">{roadmap.stage}</span>
-                    </p>
-                </div>
+                    <p className="text-xl text-gray-300">Step-by-step guide to your dream career</p>
+                </motion.div>
 
-                {/* Personalized Note */}
-                {roadmap.content.personalized_note && (
-                    <Card className="mb-8 border-primary/50 bg-primary/5">
-                        <CardContent className="p-6">
-                            <p className="text-sm">{roadmap.content.personalized_note}</p>
-                        </CardContent>
-                    </Card>
+                {/* Career Selector */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="mb-12"
+                >
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Target className="w-5 h-5 text-blue-400" />
+                        Select Your Career Path
+                    </h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                        {matchedCareers.map((career, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.2 + index * 0.1 }}
+                                whileHover={{ scale: 1.05 }}
+                                onClick={() => setSelectedCareer(career)}
+                                className={`p-6 rounded-xl cursor-pointer transition-all ${selectedCareer?.name === career.name
+                                    ? 'bg-gradient-to-br from-blue-600 to-purple-600 ring-2 ring-blue-400'
+                                    : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                                    }`}
+                            >
+                                <h4 className="font-bold text-lg mb-2">{career.name}</h4>
+                                <div className="flex items-center gap-2 text-sm">
+                                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                                    <span className="text-green-400 font-semibold">{career.match}% Match</span>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </motion.div>
+
+                {/* Roadmap Steps */}
+                {roadmap && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="space-y-8"
+                    >
+                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <TrendingUp className="w-6 h-6 text-blue-400" />
+                            Step-by-Step Roadmap: {selectedCareer?.name}
+                        </h3>
+
+                        {roadmap.steps.map((step: any, index: number) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.4 + index * 0.1 }}
+                            >
+                                <Card className="bg-gray-800/90 border-white/20 backdrop-blur-xl overflow-hidden">
+                                    <CardContent className="p-8">
+                                        <div className="flex items-start gap-6">
+                                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-3xl font-bold shadow-lg">
+                                                {step.icon}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <h4 className="text-2xl font-bold text-white">Step {index + 1}: {step.title}</h4>
+                                                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-semibold">
+                                                        {step.duration}
+                                                    </span>
+                                                </div>
+                                                <p className="text-gray-300 text-lg">{step.desc}</p>
+                                            </div>
+                                            <CheckCircle2 className="w-8 h-8 text-green-400" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                {index < roadmap.steps.length - 1 && (
+                                    <div className="flex justify-center py-4">
+                                        <ArrowRight className="w-8 h-8 text-blue-400 rotate-90" />
+                                    </div>
+                                )}
+                            </motion.div>
+                        ))}
+                    </motion.div>
                 )}
 
-                {/* Roadmap Timeline */}
-                <div className="space-y-6">
-                    {/* Current Year */}
-                    <Card className="border-l-4 border-l-blue-500">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                                <span className="text-2xl">📍</span>
-                                {roadmap.content.current_year.title}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <h4 className="mb-2 font-semibold">Tasks:</h4>
-                                <ul className="space-y-2">
-                                    {roadmap.content.current_year.tasks.map((task, index) => (
-                                        <li key={index} className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-green-600" />
-                                            <span className="text-sm">{task}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="mb-2 font-semibold">Milestones:</h4>
-                                <ul className="space-y-2">
-                                    {roadmap.content.current_year.milestones.map((milestone, index) => (
-                                        <li key={index} className="flex items-start gap-2">
-                                            <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-blue-600" />
-                                            <span className="text-sm font-medium">{milestone}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Next Year */}
-                    <Card className="border-l-4 border-l-green-500">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                                <span className="text-2xl">🚀</span>
-                                {roadmap.content.next_year.title}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <h4 className="mb-2 font-semibold">Tasks:</h4>
-                                <ul className="space-y-2">
-                                    {roadmap.content.next_year.tasks.map((task, index) => (
-                                        <li key={index} className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-green-600" />
-                                            <span className="text-sm">{task}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="mb-2 font-semibold">Milestones:</h4>
-                                <ul className="space-y-2">
-                                    {roadmap.content.next_year.milestones.map((milestone, index) => (
-                                        <li key={index} className="flex items-start gap-2">
-                                            <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-green-600" />
-                                            <span className="text-sm font-medium">{milestone}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Future Goals */}
-                    <Card className="border-l-4 border-l-purple-500">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-400">
-                                <span className="text-2xl">🎯</span>
-                                Future Goals
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <h4 className="mb-2 font-semibold">Goals:</h4>
-                                <ul className="space-y-2">
-                                    {roadmap.content.future.goals.map((goal, index) => (
-                                        <li key={index} className="flex items-start gap-2">
-                                            <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-purple-600" />
-                                            <span className="text-sm">{goal}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="mb-2 font-semibold">Potential Careers:</h4>
-                                <div className="flex flex-wrap gap-2">
-                                    {roadmap.content.future.potential_careers.map((career, index) => (
-                                        <span
-                                            key={index}
-                                            className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                                        >
-                                            {career}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
                 {/* Actions */}
-                <div className="mt-8 flex gap-4">
-                    <Button onClick={() => navigate('/assessments')}>
-                        Complete Assessments
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="mt-12 flex gap-4 justify-center"
+                >
+                    <Button size="lg" onClick={() => navigate('/careers')} className="bg-gradient-to-r from-blue-600 to-purple-600">
+                        Explore More Careers
                     </Button>
-                    <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                    <Button size="lg" variant="outline" onClick={() => navigate('/dashboard')}>
                         Back to Dashboard
                     </Button>
-                </div>
+                </motion.div>
             </main>
         </div>
     );

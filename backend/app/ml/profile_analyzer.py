@@ -1,5 +1,5 @@
 """Holistic profile generator and analyzer"""
-from app.models import Assessment, HolisticProfile
+from app.models import Assessment, HolisticProfile, TestResult
 from app import db
 
 
@@ -19,6 +19,44 @@ class ProfileAnalyzer:
         for assessment in assessments:
             profile_data[assessment.assessment_type] = assessment.scores
         
+        # Get career recommendations from TestResult
+        test_result = TestResult.query.filter_by(user_id=user_id).order_by(TestResult.created_at.desc()).first()
+        top_careers = []
+        
+        if test_result and test_result.recommendations:
+            print(f"[ProfileAnalyzer] TestResult found: {test_result.recommendations}")
+            
+            # Extract careers from MCQ recommendations (these are simple strings)
+            mcq_careers = test_result.recommendations.get('mcq_careers', [])
+            ml_courses = test_result.recommendations.get('ml_courses', [])
+            
+            print(f"[ProfileAnalyzer] MCQ Careers: {mcq_careers}")
+            print(f"[ProfileAnalyzer] ML Courses: {ml_courses}")
+            
+            # Process MCQ careers (simple strings like "Scientist", "Engineer")
+            for career_name in mcq_careers:
+                if isinstance(career_name, str) and career_name not in [c['name'] for c in top_careers]:
+                    top_careers.append({
+                        'name': career_name,
+                        'match': 90,  # High match since it's from personality test
+                        'salary': 'Varies'
+                    })
+            
+            # Process ML courses (these have 'course' and 'confidence')
+            for course in ml_courses:
+                if isinstance(course, dict):
+                    course_name = course.get('course', '')
+                    if course_name and course_name not in [c['name'] for c in top_careers]:
+                        top_careers.append({
+                            'name': course_name,
+                            'match': int(course.get('confidence', 85)),
+                            'salary': 'Varies'
+                        })
+            
+            # Limit to top 5
+            top_careers = top_careers[:5]
+            print(f"[ProfileAnalyzer] Final top_careers: {top_careers}")
+        
         # Calculate clarity score
         clarity_score = self._calculate_clarity_score(profile_data)
         
@@ -28,13 +66,21 @@ class ProfileAnalyzer:
         # Create or update holistic profile
         holistic = HolisticProfile.query.filter_by(user_id=user_id).first()
         
+        # Include top_careers in profile_data
+        complete_profile_data = {
+            **profile_data,
+            'summary': summary,
+            'top_careers': top_careers,
+            'topCareers': top_careers  # Both formats for compatibility
+        }
+        
         if holistic:
-            holistic.profile_data = {**profile_data, 'summary': summary}
+            holistic.profile_data = complete_profile_data
             holistic.clarity_score = clarity_score
         else:
             holistic = HolisticProfile(
                 user_id=user_id,
-                profile_data={**profile_data, 'summary': summary},
+                profile_data=complete_profile_data,
                 clarity_score=clarity_score
             )
             db.session.add(holistic)

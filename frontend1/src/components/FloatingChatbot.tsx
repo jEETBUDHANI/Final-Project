@@ -21,11 +21,11 @@ export default function FloatingChatbot() {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
-            content: "Hi! 👋 I'm your AI Career Mentor. Ask me anything about careers, skills, or your future!",
+            content: "Hi! I am Shiv, your AI Career Mentor. 👋 Ask me anything about careers, skills, or your future! How can I help you today?",
             followUpQuestions: [
                 "What career is best for me?",
                 "How do I improve my skills?",
-                "I'm confused about my career path"
+                "Help me with my career path"
             ],
             timestamp: new Date().toISOString()
         }
@@ -107,9 +107,20 @@ export default function FloatingChatbot() {
                 className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-2xl hover:scale-110 transition-all duration-300 animate-bounce"
             >
                 <MessageCircle className="h-8 w-8" />
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold">1</span>
             </button>
         );
     }
+
+    const speak = (text: string) => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    };
 
     return (
         <div
@@ -135,13 +146,13 @@ export default function FloatingChatbot() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 to-secondary/10 rounded-t-2xl">
                 <div className="flex items-center gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary">
-                        <Bot className="h-6 w-6 text-primary-foreground" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 border-2 border-white/20">
+                        <Bot className="h-6 w-6 text-white" />
                     </div>
                     <div>
                         <div className="flex items-center gap-1">
-                            <span className="font-bold text-sm">AI Career Mentor</span>
-                            <Sparkles className="h-3 w-3 text-primary" />
+                            <span className="font-bold text-sm">Shiv (AI Mentor)</span>
+                            <Sparkles className="h-3 w-3 text-yellow-400" />
                         </div>
                         <span className="text-xs text-muted-foreground">Online • Powered by Gemini</span>
                     </div>
@@ -174,18 +185,29 @@ export default function FloatingChatbot() {
                             <div key={index} className="animate-in fade-in slide-in-from-bottom-2">
                                 <div className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     {message.role === 'assistant' && (
-                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary">
-                                            <Bot className="h-4 w-4 text-primary-foreground" />
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600">
+                                            <Bot className="h-4 w-4 text-white" />
                                         </div>
                                     )}
 
                                     <div
-                                        className={`max-w-[75%] rounded-2xl px-3 py-2 ${message.role === 'user'
-                                                ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground'
-                                                : 'bg-muted'
+                                        className={`max-w-[75%] rounded-2xl px-3 py-2 shadow-sm ${message.role === 'user'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 text-gray-800 border border-gray-200'
                                             }`}
                                     >
-                                        <p className="text-xs leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                        <div className="flex justify-between items-start gap-2">
+                                            <p className="text-xs leading-relaxed whitespace-pre-wrap flex-1">{message.content}</p>
+                                            {message.role === 'assistant' && (
+                                                <button
+                                                    onClick={() => speak(message.content)}
+                                                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                                    title="Speak"
+                                                >
+                                                    <Sparkles className="h-3 w-3 text-blue-500" />
+                                                </button>
+                                            )}
+                                        </div>
 
                                         {message.followUpQuestions && message.followUpQuestions.length > 0 && (
                                             <div className="mt-2 space-y-1">
